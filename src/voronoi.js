@@ -1,5 +1,6 @@
 import Path from "./path.js";
 import Polygon from "./polygon.js";
+const epsilon = 1e-6;
 
 export default class Voronoi {
   constructor(delaunay, [xmin, ymin, xmax, ymax] = [0, 0, 960, 500]) {
@@ -110,9 +111,9 @@ export default class Voronoi {
     if (points === null || !points.length) return;
     context.moveTo(points[0], points[1]);
     let n = points.length;
-    while (points[0] === points[n-2] && points[1] === points[n-1] && n > 1) n -= 2;
+    while ((Math.abs(points[0] - points[n-2]) < epsilon) && (Math.abs(points[1] - points[n-1]) < epsilon) && n > 1) n -= 2;
     for (let i = 2; i < n; i += 2) {
-      if (points[i] !== points[i-2] || points[i+1] !== points[i-1])
+      if ((Math.abs(points[i] - points[i-2]) >= epsilon) || (Math.abs(points[i+1] - points[i-1]) >= epsilon))
         context.lineTo(points[i], points[i + 1]);
     }
     context.closePath();
@@ -273,15 +274,15 @@ export default class Voronoi {
         case 0b1001: e0 = 0b0001; continue; // bottom-left
         case 0b0001: e0 = 0b0101, x = this.xmin, y = this.ymin; break; // left
       }
-      if ((P[j] !== x || P[j + 1] !== y) && this.contains(i, x, y)) {
+      if ((Math.abs(P[j] - x) >= epsilon) || (Math.abs(P[j + 1] - y ) >= epsilon) && this.contains(i, x, y)) {
         P.splice(j, 0, x, y), j += 2;
       }
     }
     if (P.length > 4) {
       for (let i = 0; i < P.length; i+= 2) {
         const j = (i + 2) % P.length, k = (i + 4) % P.length;
-        if (P[i] === P[j] && P[j] === P[k]
-        || P[i + 1] === P[j + 1] && P[j + 1] === P[k + 1])
+        if ((Math.abs(P[i] - P[j]) < epsilon) && (Math.abs(P[j] - P[k]) < epsilon)
+        || (Math.abs(P[i + 1] - P[j + 1]) < epsilon)  && (Math.abs(P[j + 1] -  P[k + 1]) < epsilon))
           P.splice(j, 2), i -= 2;
       }
     }
@@ -306,10 +307,10 @@ export default class Voronoi {
     return [x, y];
   }
   _edgecode(x, y) {
-    return (x === this.xmin ? 0b0001
-        : x === this.xmax ? 0b0010 : 0b0000)
-        | (y === this.ymin ? 0b0100
-        : y === this.ymax ? 0b1000 : 0b0000);
+    return (Math.abs(x - this.xmin) < epsilon ? 0b0001
+        : Math.abs(x - this.xmax) < epsilon ? 0b0010 : 0b0000)
+        | (Math.abs(y - this.ymin) < epsilon ? 0b0100
+        : Math.abs(y - this.ymax) < epsilon ? 0b1000 : 0b0000);
   }
   _regioncode(x, y) {
     return (x < this.xmin ? 0b0001
